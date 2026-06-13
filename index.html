@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <div class="progress" id="progress" aria-hidden="true"></div>
+
   <!-- ===== Header / Nav ===== -->
   <header class="header" id="header">
     <a href="#top" class="logo">studio<span>°</span>mono</a>
@@ -47,8 +49,8 @@
   <section class="section profile" id="profile">
     <div class="section__head">
       <span class="section__num">01</span>
-      <h2 class="section__title" data-reveal>Profile</h2>
-      <p class="section__sub" data-reveal>わたしのこと</p>
+      <h2 class="section__title">Profile</h2>
+      <p class="section__sub">わたしのこと</p>
     </div>
 
     <div class="profile__card profile__intro" data-reveal>
@@ -75,22 +77,23 @@
   <section class="section news" id="news">
     <div class="section__head">
       <span class="section__num">02</span>
-      <h2 class="section__title" data-reveal>News</h2>
-      <p class="section__sub" data-reveal>更新情報・お知らせ</p>
+      <h2 class="section__title">News</h2>
+      <p class="section__sub">更新情報・お知らせ</p>
     </div>
 
     <ul class="news__list" id="newsList" data-reveal>
       <li class="news__empty">読み込み中…</li>
     </ul>
 
-    <!-- 記事エディタ（完全クライアント側 / サーバー送信なし）
-         入力 → プレビューに反映し、更新後の data.json を生成。
-         ダウンロードして data/data.json を差し替え、git push で公開します。 -->
+    <!-- 記事エディタ（クライアント側 / サーバー送信なし）
+         追加するとこのブラウザに永久保存（localStorage）され、再読込でも消えません。
+         全員に公開したいときは data.json を書き出して push します。 -->
     <details class="news__admin" data-reveal>
-      <summary>＋ 記事を追加する（このブラウザ内で編集）</summary>
+      <summary>＋ 記事を追加する</summary>
       <p class="news__admin-note">
-        公開サイトには書き込みません。下で記事を作るとプレビューに反映され、
-        更新後の <code>data.json</code> を生成します。ファイルを差し替えて push すれば公開されます。
+        追加した記事は<strong>このブラウザに永久保存</strong>され、再読み込みしても残ります。
+        全員へ公開したいときは <code>data.json をダウンロード</code> して
+        <code>data/data.json</code> を差し替え、push してください。
       </p>
       <form class="post-form" id="postForm">
         <label>カテゴリ
@@ -120,24 +123,24 @@
   <section class="section faq" id="faq">
     <div class="section__head">
       <span class="section__num">03</span>
-      <h2 class="section__title" data-reveal>FAQ</h2>
-      <p class="section__sub" data-reveal>よくあるご質問</p>
+      <h2 class="section__title">FAQ</h2>
+      <p class="section__sub">よくあるご質問</p>
     </div>
 
     <div class="accordion" id="accordion">
-      <div class="acc__item" data-reveal>
+      <div class="acc__item">
         <button class="acc__q" aria-expanded="false">制作の依頼はできますか？<i></i></button>
         <div class="acc__a"><p>はい。LP・ポートフォリオサイトを中心に承っています。Contactフォームよりお気軽にどうぞ。</p></div>
       </div>
-      <div class="acc__item" data-reveal>
+      <div class="acc__item">
         <button class="acc__q" aria-expanded="false">対応している技術は？<i></i></button>
         <div class="acc__a"><p>HTML / CSS / JavaScript、GSAPによるアニメーション実装が得意です。バックエンドは簡易なものに対応します。</p></div>
       </div>
-      <div class="acc__item" data-reveal>
+      <div class="acc__item">
         <button class="acc__q" aria-expanded="false">納期の目安は？<i></i></button>
         <div class="acc__a"><p>1ページのLPで約2週間が目安です。規模により前後しますのでご相談ください。</p></div>
       </div>
-      <div class="acc__item" data-reveal>
+      <div class="acc__item">
         <button class="acc__q" aria-expanded="false">かわいい系もかっこいい系も両方いけますか？<i></i></button>
         <div class="acc__a"><p>もちろんです。両者の「ちょうどいい配合」を見つけるのが好きです。</p></div>
       </div>
@@ -148,8 +151,8 @@
   <section class="section contact" id="contact">
     <div class="section__head">
       <span class="section__num">04</span>
-      <h2 class="section__title" data-reveal>Contact</h2>
-      <p class="section__sub" data-reveal>お問い合わせ</p>
+      <h2 class="section__title">Contact</h2>
+      <p class="section__sub">お問い合わせ</p>
     </div>
 
     <form class="contact-form" id="contactForm" data-reveal>

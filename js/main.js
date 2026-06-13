@@ -1,21 +1,29 @@
 /* =========================================================
    studio°mono  —  main.js
-   GSAP ScrollTrigger 演出 + News読込/投稿 + FAQ + Contact
+   GSAP演出 + News(ローカル永続保存) + FAQ + Contact
    ========================================================= */
 (() => {
   "use strict";
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hasGSAP = typeof window.gsap !== "undefined";
+  const STORE_KEY = "studio_mono_news"; // localStorage に追加記事を永久保存
 
   /* ---------- Header: スクロールで縮む / モバイルメニュー ---------- */
   const header = document.getElementById("header");
   const nav = document.querySelector(".nav");
   const navToggle = document.getElementById("navToggle");
+  const progress = document.getElementById("progress");
 
-  window.addEventListener("scroll", () => {
+  function onScroll() {
     header.classList.toggle("is-scrolled", window.scrollY > 20);
-  }, { passive: true });
+    if (progress) {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      progress.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`;
+    }
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
 
   navToggle?.addEventListener("click", () => nav.classList.toggle("is-open"));
   nav?.addEventListener("click", (e) => {
@@ -25,72 +33,106 @@
   /* ---------- GSAP: スクロール連動アニメーション ---------- */
   function initAnimations() {
     if (!hasGSAP || prefersReduced) {
-      // フォールバック: 全要素を即表示
       document.querySelectorAll("[data-reveal],[data-fade]").forEach((el) => {
         el.style.opacity = 1; el.style.transform = "none";
-      });
-      document.querySelectorAll(".skill__bar i").forEach((bar) => {
-        bar.style.width = bar.closest(".skill").dataset.skill + "%";
       });
       return;
     }
 
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero: 初期演出（タイトル行を順にスライドイン）
-    const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
-    heroTl
-      .from("[data-hero-line]", { yPercent: 120, opacity: 0, duration: 0.9, stagger: 0.12 })
-      .from("[data-fade]", { y: 24, opacity: 0, duration: 0.7, stagger: 0.12 }, "-=0.4");
+    // Hero: タイトル行を順にスライドイン → リード/ボタンをフェード
+    gsap.timeline({ defaults: { ease: "power3.out" } })
+      .from("[data-hero-line]", { yPercent: 120, opacity: 0, duration: 1.0, stagger: 0.14 })
+      .from("[data-fade]", { y: 26, opacity: 0, duration: 0.7, stagger: 0.12 }, "-=0.45");
 
-    // 各セクションの reveal 要素: スクロールでフェード＆スライドイン
-    gsap.utils.toArray("[data-reveal]").forEach((el) => {
-      gsap.to(el, {
-        opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: el, start: "top 85%", toggleActions: "play none none none" }
+    // セクション見出し: 番号→タイトル→サブを少しずつ
+    gsap.utils.toArray(".section__head").forEach((head) => {
+      gsap.from(head.children, {
+        y: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power3.out",
+        scrollTrigger: { trigger: head, start: "top 85%" }
       });
     });
 
-    // スキルバー: ビューに入ったら幅をアニメーション
-    gsap.utils.toArray(".skill").forEach((skill) => {
-      const bar = skill.querySelector(".skill__bar i");
-      gsap.to(bar, {
-        width: skill.dataset.skill + "%", duration: 1.2, ease: "power2.out",
-        scrollTrigger: { trigger: skill, start: "top 88%" }
+    // 汎用 reveal: フェード＋少しスケール
+    gsap.utils.toArray("[data-reveal]").forEach((el) => {
+      gsap.to(el, {
+        opacity: 1, y: 0, scale: 1, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" }
       });
+    });
+
+    // プロフィール各行を順番に
+    gsap.from(".profile__row", {
+      x: -20, opacity: 0, duration: 0.6, stagger: 0.12, ease: "power2.out",
+      scrollTrigger: { trigger: ".profile__list", start: "top 85%" }
+    });
+
+    // FAQ 各項目をスタッガー
+    gsap.from(".acc__item", {
+      y: 24, opacity: 0, duration: 0.6, stagger: 0.1, ease: "power2.out",
+      scrollTrigger: { trigger: ".accordion", start: "top 85%" }
     });
 
     // 背景blobをスクロールで緩やかにパララックス
-    gsap.to(".blob--blue", {
-      yPercent: 30, ease: "none",
-      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true }
+    gsap.to(".blob--blue", { yPercent: 40, ease: "none",
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+    gsap.to(".blob--pink", { yPercent: -25, ease: "none",
+      scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+
+    // セクション見出しの番号をゆっくり浮かせる（奥行き）
+    gsap.utils.toArray(".section__num").forEach((el) => {
+      gsap.to(el, { y: -20, ease: "none",
+        scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } });
     });
   }
 
-  /* ---------- News: data.json を読込んで描画 ---------- */
+  /* =========================================================
+     News : data.json(公開ベース) + localStorage(追加記事) を合成
+     投稿は localStorage に保存されるので、再読み込みしても消えない。
+     ========================================================= */
   const newsList = document.getElementById("newsList");
-  let newsData = []; // 現在表示中の記事（エディタの追加もここに反映）
+  let baseNews = [];   // data.json 由来（全員に公開済み）
+  let localNews = [];  // このブラウザで追加（永続保存）
+
+  function loadLocal() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      localNews = Array.isArray(arr) ? arr : [];
+    } catch { localNews = []; }
+  }
+  function saveLocal() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(localNews)); } catch {}
+  }
+
+  function mergedNews() {
+    // id で重複排除（local を優先）。新しい日付順。
+    const map = new Map();
+    [...baseNews, ...localNews].forEach((n) => map.set(String(n.id), n));
+    return [...map.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
 
   async function loadNews() {
     if (!newsList) return;
+    loadLocal();
     try {
       const res = await fetch("data/data.json");
       if (!res.ok) throw new Error("fetch failed");
       const data = await res.json();
-      newsData = Array.isArray(data.news) ? data.news : [];
-      renderNews(newsData);
-    } catch (err) {
-      newsList.innerHTML = `<li class="news__empty">記事を読み込めませんでした。</li>`;
+      baseNews = Array.isArray(data.news) ? data.news : [];
+    } catch {
+      baseNews = []; // 取得できなくてもローカル分は表示
     }
+    renderNews();
   }
 
-  function renderNews(items) {
+  function renderNews() {
+    const items = mergedNews();
     if (!items.length) {
       newsList.innerHTML = `<li class="news__empty">まだ記事がありません。</li>`;
       return;
     }
-    // 新しい順
-    items.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     newsList.innerHTML = items.map((n) => `
       <li class="news__item">
         <span class="news__date">${escapeHTML(n.date || "")}</span>
@@ -99,23 +141,18 @@
         <span class="news__body">${escapeHTML(n.body || "")}</span>
       </li>`).join("");
 
-    // 追加された行をふわっと表示
     if (hasGSAP && !prefersReduced) {
-      gsap.from(".news__item", { opacity: 0, y: 20, duration: 0.6, stagger: 0.08, ease: "power2.out" });
+      gsap.from(".news__item", { opacity: 0, y: 20, duration: 0.5, stagger: 0.07, ease: "power2.out" });
     }
   }
 
-  /* ---------- News: 記事エディタ（クライアント側のみ・送信なし） ----------
-     追加するとプレビューに反映し、更新後の data.json を生成。
-     ダウンロードして data/data.json を差し替え、git push で公開する。 */
+  /* ---------- News: 記事エディタ ----------
+     追加 → localStorage に永久保存 → 一覧へ即反映（再読込でも残る）。
+     「data.json をダウンロード」で全員公開用のファイルも書き出せる。 */
   const postForm = document.getElementById("postForm");
   const postMsg = document.getElementById("postMsg");
   const jsonOut = document.getElementById("jsonOut");
   const downloadBtn = document.getElementById("downloadJson");
-
-  function currentJson() {
-    return JSON.stringify({ news: newsData }, null, 4);
-  }
 
   postForm?.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -125,24 +162,23 @@
     const category = (fd.get("category") || "お知らせ").toString();
     if (!title || !body) return;
 
-    const nextId = newsData.reduce((m, n) => Math.max(m, Number(n.id) || 0), 0) + 1;
-    const today = new Date().toISOString().slice(0, 10);
-    newsData.unshift({ id: nextId, date: today, category, title, body });
-
-    renderNews(newsData);
-    if (jsonOut) jsonOut.value = currentJson();
-    setMsg(postMsg, "プレビューに追加しました。「data.json をダウンロード」で保存できます。", "is-ok");
+    const item = { id: Date.now(), date: new Date().toISOString().slice(0, 10), category, title, body };
+    localNews.unshift(item);
+    saveLocal();          // ← 永続保存
+    renderNews();
+    if (jsonOut) jsonOut.value = JSON.stringify({ news: mergedNews() }, null, 4);
+    setMsg(postMsg, "保存しました（このブラウザに永久保存）。再読み込みしても残ります。", "is-ok");
     postForm.reset();
   });
 
   downloadBtn?.addEventListener("click", () => {
-    const blob = new Blob([currentJson()], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ news: mergedNews() }, null, 4)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url; a.download = "data.json";
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
-    setMsg(postMsg, "data.json をダウンロードしました。data/ 内のファイルを差し替えてください。", "is-ok");
+    setMsg(postMsg, "data.json を書き出しました。data/ のファイルを差し替えて push すると全員に公開されます。", "is-ok");
   });
 
   /* ---------- FAQ アコーディオン ---------- */
@@ -164,7 +200,7 @@
     });
   });
 
-  /* ---------- Contact (デモ送信。API禁止のためローカル完結) ---------- */
+  /* ---------- Contact (デモ送信。サーバー送信なし) ---------- */
   const contactForm = document.getElementById("contactForm");
   const contactMsg = document.getElementById("contactMsg");
   contactForm?.addEventListener("submit", (e) => {
@@ -188,6 +224,7 @@
 
   /* ---------- init ---------- */
   document.addEventListener("DOMContentLoaded", () => {
+    onScroll();
     initAnimations();
     loadNews();
   });
