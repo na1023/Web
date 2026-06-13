@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio Mono — かわいさとかっこよさの間で</title>
+  <meta name="description" content="モノトーン×パステルのスクロール連動型ポートフォリオ プロトタイプ" />
+  <!-- セキュリティ: 同一オリジンのリソースのみ許可。外部接続・インラインスクリプトを禁止 -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
+  <meta name="referrer" content="no-referrer" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ===== Header / Nav ===== -->
+  <header class="header" id="header">
+    <a href="#top" class="logo">studio<span>°</span>mono</a>
+    <nav class="nav">
+      <a href="#top">TOP</a>
+      <a href="#profile">Profile</a>
+      <a href="#news">News</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <button class="nav-toggle" aria-label="メニュー" id="navToggle"><span></span><span></span><span></span></button>
+  </header>
+
+  <!-- ===== TOP / Hero ===== -->
+  <section class="hero" id="top">
+    <div class="hero__bg" aria-hidden="true">
+      <span class="blob blob--pink"></span>
+      <span class="blob blob--blue"></span>
+      <span class="blob blob--mint"></span>
+    </div>
+    <div class="hero__inner">
+      <p class="hero__eyebrow" data-fade>Creative Portfolio</p>
+      <h1 class="hero__title">
+        <span class="line" data-hero-line>かわいい、を</span>
+        <span class="line" data-hero-line>かっこよく。<span class="dot">.</span></span>
+      </h1>
+      <p class="hero__lead" data-fade>モノトーンの静けさに、パステルの遊び心を。<br />スクロールして、世界観をのぞいてみてください。</p>
+      <a href="#profile" class="btn btn--primary" data-fade>はじめる</a>
+    </div>
+    <div class="scroll-hint" data-fade><span>SCROLL</span><i></i></div>
+  </section>
+
+  <!-- ===== Profile ===== -->
+  <section class="section profile" id="profile">
+    <div class="section__head">
+      <span class="section__num">01</span>
+      <h2 class="section__title" data-reveal>Profile</h2>
+      <p class="section__sub" data-reveal>わたしのこと</p>
+    </div>
+
+    <div class="profile__card profile__intro" data-reveal>
+      <div class="avatar" aria-hidden="true">🐾</div>
+      <h3>えぬ</h3>
+      <dl class="profile__list">
+        <div class="profile__row">
+          <dt>名前</dt>
+          <dd>えぬ</dd>
+        </div>
+        <div class="profile__row">
+          <dt>生まれ年</dt>
+          <dd>04</dd>
+        </div>
+        <div class="profile__row">
+          <dt>趣味</dt>
+          <dd>皆無</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ===== News ===== -->
+  <section class="section news" id="news">
+    <div class="section__head">
+      <span class="section__num">02</span>
+      <h2 class="section__title" data-reveal>News</h2>
+      <p class="section__sub" data-reveal>更新情報・お知らせ</p>
+    </div>
+
+    <ul class="news__list" id="newsList" data-reveal>
+      <li class="news__empty">読み込み中…</li>
+    </ul>
+
+    <!-- 記事エディタ（完全クライアント側 / サーバー送信なし）
+         入力 → プレビューに反映し、更新後の data.json を生成。
+         ダウンロードして data/data.json を差し替え、git push で公開します。 -->
+    <details class="news__admin" data-reveal>
+      <summary>＋ 記事を追加する（このブラウザ内で編集）</summary>
+      <p class="news__admin-note">
+        公開サイトには書き込みません。下で記事を作るとプレビューに反映され、
+        更新後の <code>data.json</code> を生成します。ファイルを差し替えて push すれば公開されます。
+      </p>
+      <form class="post-form" id="postForm">
+        <label>カテゴリ
+          <select name="category">
+            <option value="お知らせ">お知らせ</option>
+            <option value="制作">制作</option>
+            <option value="日記">日記</option>
+          </select>
+        </label>
+        <label>タイトル
+          <input type="text" name="title" required maxlength="60" placeholder="新しいお知らせ" />
+        </label>
+        <label>本文
+          <textarea name="body" rows="3" required maxlength="400" placeholder="本文を入力…"></textarea>
+        </label>
+        <div class="post-form__actions">
+          <button type="submit" class="btn btn--primary">プレビューに追加</button>
+          <button type="button" class="btn btn--ghost" id="downloadJson">data.json をダウンロード</button>
+        </div>
+        <p class="post-form__msg" id="postMsg" role="status"></p>
+        <textarea class="post-form__out" id="jsonOut" rows="6" readonly aria-label="生成された data.json"></textarea>
+      </form>
+    </details>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section class="section faq" id="faq">
+    <div class="section__head">
+      <span class="section__num">03</span>
+      <h2 class="section__title" data-reveal>FAQ</h2>
+      <p class="section__sub" data-reveal>よくあるご質問</p>
+    </div>
+
+    <div class="accordion" id="accordion">
+      <div class="acc__item" data-reveal>
+        <button class="acc__q" aria-expanded="false">制作の依頼はできますか？<i></i></button>
+        <div class="acc__a"><p>はい。LP・ポートフォリオサイトを中心に承っています。Contactフォームよりお気軽にどうぞ。</p></div>
+      </div>
+      <div class="acc__item" data-reveal>
+        <button class="acc__q" aria-expanded="false">対応している技術は？<i></i></button>
+        <div class="acc__a"><p>HTML / CSS / JavaScript、GSAPによるアニメーション実装が得意です。バックエンドは簡易なものに対応します。</p></div>
+      </div>
+      <div class="acc__item" data-reveal>
+        <button class="acc__q" aria-expanded="false">納期の目安は？<i></i></button>
+        <div class="acc__a"><p>1ページのLPで約2週間が目安です。規模により前後しますのでご相談ください。</p></div>
+      </div>
+      <div class="acc__item" data-reveal>
+        <button class="acc__q" aria-expanded="false">かわいい系もかっこいい系も両方いけますか？<i></i></button>
+        <div class="acc__a"><p>もちろんです。両者の「ちょうどいい配合」を見つけるのが好きです。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Contact ===== -->
+  <section class="section contact" id="contact">
+    <div class="section__head">
+      <span class="section__num">04</span>
+      <h2 class="section__title" data-reveal>Contact</h2>
+      <p class="section__sub" data-reveal>お問い合わせ</p>
+    </div>
+
+    <form class="contact-form" id="contactForm" data-reveal>
+      <div class="field">
+        <input type="text" name="name" id="cf-name" required placeholder=" " />
+        <label for="cf-name">お名前</label>
+      </div>
+      <div class="field">
+        <input type="email" name="email" id="cf-email" required placeholder=" " />
+        <label for="cf-email">メールアドレス</label>
+      </div>
+      <div class="field">
+        <textarea name="message" id="cf-msg" rows="4" required placeholder=" "></textarea>
+        <label for="cf-msg">メッセージ</label>
+      </div>
+      <button type="submit" class="btn btn--primary">送信する</button>
+      <p class="contact-form__msg" id="contactMsg" role="status"></p>
+    </form>
+  </section>
+
+  <footer class="footer">
+    <p>© 2026 studio°mono — prototype</p>
+  </footer>
+
+  <!-- GSAP（自己ホスト / 外部CDN不使用） -->
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/ScrollTrigger.min.js"></script>
+  <script src="js/main.js" defer></script>
+</body>
+</html>
