@@ -6,12 +6,24 @@
   <title>Studio Mono — かわいさとかっこよさの間で</title>
   <meta name="description" content="モノトーン×パステルのスクロール連動型ポートフォリオ プロトタイプ" />
   <!-- セキュリティ: 同一オリジンのリソースのみ許可。外部接続・インラインスクリプトを禁止 -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'" />
   <meta name="referrer" content="no-referrer" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <div class="progress" id="progress" aria-hidden="true"></div>
+
+  <!-- ===== Side rails ===== -->
+  <aside class="rail rail--left" aria-hidden="true">
+    <span class="rail__dot"></span>
+    <span class="rail__text">MONOTONE × PASTEL</span>
+    <span class="rail__line"></span>
+  </aside>
+  <aside class="rail rail--right">
+    <span class="rail__line"></span>
+    <span class="rail__text rail__text--up">EST. 2004 — STUDIO°MONO</span>
+    <button class="rail__admin" id="adminToggle" title="管理者ログイン">ADMIN</button>
+  </aside>
 
   <!-- ===== Header / Nav ===== -->
   <header class="header" id="header">
@@ -25,6 +37,16 @@
     </nav>
     <button class="nav-toggle" aria-label="メニュー" id="navToggle"><span></span><span></span><span></span></button>
   </header>
+
+  <!-- 管理モード時のバー -->
+  <div class="adminbar admin-only" id="adminBar">
+    <span>🔓 管理モード</span>
+    <div class="adminbar__actions">
+      <button class="btn btn--ghost btn--sm" id="downloadJson">data.json を書き出して公開</button>
+      <button class="btn btn--ghost btn--sm" id="adminReset">編集を破棄</button>
+      <button class="btn btn--ghost btn--sm" id="adminLogout">ログアウト</button>
+    </div>
+  </div>
 
   <!-- ===== TOP / Hero ===== -->
   <section class="hero" id="top">
@@ -53,23 +75,28 @@
       <p class="section__sub">わたしのこと</p>
     </div>
 
-    <div class="profile__card profile__intro" data-reveal>
-      <div class="avatar" aria-hidden="true">🐾</div>
-      <h3>えぬ</h3>
-      <dl class="profile__list">
-        <div class="profile__row">
-          <dt>名前</dt>
-          <dd>えぬ</dd>
-        </div>
-        <div class="profile__row">
-          <dt>生まれ年</dt>
-          <dd>04</dd>
-        </div>
-        <div class="profile__row">
-          <dt>趣味</dt>
-          <dd>皆無</dd>
-        </div>
-      </dl>
+    <div class="profile__card" id="profileCard" data-reveal>
+      <!-- JSが data.json から描画 -->
+    </div>
+
+    <!-- 管理: プロフィール編集 -->
+    <div class="editor admin-only">
+      <h3 class="editor__title">プロフィールを編集</h3>
+      <form class="post-form" id="profileForm">
+        <label>名前
+          <input type="text" name="name" maxlength="40" />
+        </label>
+        <label>ひとこと（タグライン）
+          <input type="text" name="tagline" maxlength="80" />
+        </label>
+        <label>紹介文
+          <textarea name="bio" rows="3" maxlength="300"></textarea>
+        </label>
+        <div class="editor__rows" id="factRows"><!-- label/value 行 --></div>
+        <button type="button" class="btn btn--ghost btn--sm" id="addFact">＋ 項目を追加</button>
+        <button type="submit" class="btn btn--primary">プロフィールを保存</button>
+        <p class="post-form__msg" id="profileMsg" role="status"></p>
+      </form>
     </div>
   </section>
 
@@ -85,17 +112,11 @@
       <li class="news__empty">読み込み中…</li>
     </ul>
 
-    <!-- 記事エディタ（クライアント側 / サーバー送信なし）
-         追加するとこのブラウザに永久保存（localStorage）され、再読込でも消えません。
-         全員に公開したいときは data.json を書き出して push します。 -->
-    <details class="news__admin" data-reveal>
-      <summary>＋ 記事を追加する</summary>
-      <p class="news__admin-note">
-        追加した記事は<strong>このブラウザに永久保存</strong>され、再読み込みしても残ります。
-        全員へ公開したいときは <code>data.json をダウンロード</code> して
-        <code>data/data.json</code> を差し替え、push してください。
-      </p>
+    <!-- 管理: 記事の追加 / 編集 -->
+    <div class="editor admin-only">
+      <h3 class="editor__title" id="newsFormTitle">記事を追加</h3>
       <form class="post-form" id="postForm">
+        <input type="hidden" name="id" value="" />
         <label>カテゴリ
           <select name="category">
             <option value="お知らせ">お知らせ</option>
@@ -110,13 +131,12 @@
           <textarea name="body" rows="3" required maxlength="400" placeholder="本文を入力…"></textarea>
         </label>
         <div class="post-form__actions">
-          <button type="submit" class="btn btn--primary">プレビューに追加</button>
-          <button type="button" class="btn btn--ghost" id="downloadJson">data.json をダウンロード</button>
+          <button type="submit" class="btn btn--primary" id="newsSubmit">追加する</button>
+          <button type="button" class="btn btn--ghost" id="newsCancel" hidden>キャンセル</button>
         </div>
         <p class="post-form__msg" id="postMsg" role="status"></p>
-        <textarea class="post-form__out" id="jsonOut" rows="6" readonly aria-label="生成された data.json"></textarea>
       </form>
-    </details>
+    </div>
   </section>
 
   <!-- ===== FAQ ===== -->
@@ -127,23 +147,27 @@
       <p class="section__sub">よくあるご質問</p>
     </div>
 
-    <div class="accordion" id="accordion">
-      <div class="acc__item">
-        <button class="acc__q" aria-expanded="false">制作の依頼はできますか？<i></i></button>
-        <div class="acc__a"><p>はい。LP・ポートフォリオサイトを中心に承っています。Contactフォームよりお気軽にどうぞ。</p></div>
-      </div>
-      <div class="acc__item">
-        <button class="acc__q" aria-expanded="false">対応している技術は？<i></i></button>
-        <div class="acc__a"><p>HTML / CSS / JavaScript、GSAPによるアニメーション実装が得意です。バックエンドは簡易なものに対応します。</p></div>
-      </div>
-      <div class="acc__item">
-        <button class="acc__q" aria-expanded="false">納期の目安は？<i></i></button>
-        <div class="acc__a"><p>1ページのLPで約2週間が目安です。規模により前後しますのでご相談ください。</p></div>
-      </div>
-      <div class="acc__item">
-        <button class="acc__q" aria-expanded="false">かわいい系もかっこいい系も両方いけますか？<i></i></button>
-        <div class="acc__a"><p>もちろんです。両者の「ちょうどいい配合」を見つけるのが好きです。</p></div>
-      </div>
+    <div class="accordion" id="accordion" data-reveal>
+      <!-- JSが描画 -->
+    </div>
+
+    <!-- 管理: FAQの追加 / 編集 -->
+    <div class="editor admin-only">
+      <h3 class="editor__title" id="faqFormTitle">質問を追加</h3>
+      <form class="post-form" id="faqForm">
+        <input type="hidden" name="id" value="" />
+        <label>質問
+          <input type="text" name="q" required maxlength="80" placeholder="質問を入力…" />
+        </label>
+        <label>回答
+          <textarea name="a" rows="3" required maxlength="400" placeholder="回答を入力…"></textarea>
+        </label>
+        <div class="post-form__actions">
+          <button type="submit" class="btn btn--primary" id="faqSubmit">追加する</button>
+          <button type="button" class="btn btn--ghost" id="faqCancel" hidden>キャンセル</button>
+        </div>
+        <p class="post-form__msg" id="faqMsg" role="status"></p>
+      </form>
     </div>
   </section>
 
@@ -161,14 +185,12 @@
         <label for="cf-name">お名前</label>
       </div>
       <div class="field">
-        <input type="email" name="email" id="cf-email" required placeholder=" " />
-        <label for="cf-email">メールアドレス</label>
-      </div>
-      <div class="field">
-        <textarea name="message" id="cf-msg" rows="4" required placeholder=" "></textarea>
+        <textarea name="message" id="cf-msg" rows="5" required placeholder=" "></textarea>
         <label for="cf-msg">メッセージ</label>
       </div>
-      <button type="submit" class="btn btn--primary">送信する</button>
+      <button type="submit" class="btn btn--primary">メールを作成して送る</button>
+      <p class="contact-form__note">送信ボタンを押すと、お使いのメールアプリが起動し
+        宛先・本文が入力された状態で開きます。そのまま送信してください。</p>
       <p class="contact-form__msg" id="contactMsg" role="status"></p>
     </form>
   </section>
@@ -176,6 +198,23 @@
   <footer class="footer">
     <p>© 2026 studio°mono — prototype</p>
   </footer>
+
+  <!-- ===== 管理者ログイン モーダル ===== -->
+  <div class="modal" id="loginModal" hidden>
+    <div class="modal__overlay" id="loginOverlay"></div>
+    <div class="modal__box" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+      <h3 id="loginTitle">管理者ログイン</h3>
+      <p class="modal__note">管理者パスワードを入力すると、投稿・編集・削除が行えます。</p>
+      <form id="loginForm">
+        <input type="password" id="loginPass" placeholder="パスワード" autocomplete="current-password" />
+        <div class="post-form__actions">
+          <button type="submit" class="btn btn--primary">ログイン</button>
+          <button type="button" class="btn btn--ghost" id="loginClose">閉じる</button>
+        </div>
+        <p class="post-form__msg" id="loginMsg" role="status"></p>
+      </form>
+    </div>
+  </div>
 
   <!-- GSAP（自己ホスト / 外部CDN不使用） -->
   <script src="vendor/gsap.min.js"></script>
