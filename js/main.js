@@ -324,10 +324,14 @@
     else sessionStorage.removeItem(STORE_AUTH);
     if (hasGSAP && !prefersReduced) ScrollTrigger.refresh();
   }
-  function openLogin() { loginModal.hidden = false; setTimeout(() => loginPass.focus(), 50); }
+  function openLogin() {
+    nav?.classList.remove("is-open");
+    loginModal.hidden = false;
+    setTimeout(() => loginPass.focus(), 50);
+  }
   function closeLogin() { loginModal.hidden = true; loginForm.reset(); setMsg(loginMsg, ""); }
 
-  $("#adminToggle")?.addEventListener("click", openLogin);
+  $$("[data-login]").forEach((el) => el.addEventListener("click", openLogin));
   $("#loginClose")?.addEventListener("click", closeLogin);
   $("#loginOverlay")?.addEventListener("click", closeLogin);
   $("#adminLogout")?.addEventListener("click", () => setAdmin(false));
