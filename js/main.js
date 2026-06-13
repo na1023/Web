@@ -11,16 +11,22 @@
 
   /* ====== 設定（必要に応じて変更） ====== */
   const CONFIG = {
-    // 管理者パスワードの SHA-256 ハッシュ。
-    // 既定パスワード: "edamame1023"  ← 変更推奨。
-    // 変更方法: 管理ログイン画面で新パスワードを入力 → コンソールに出る
-    //          ハッシュをこの値に貼り替えて push。
-    adminHash: "5d0467d1eecd47ad62eaa7565b89e6dad7dd01124f71ffc652a6281573f32872",
+    // ▼ Supabase（DB）を使うとき、この2つを設定すると自動で「DBモード」になります。
+    //    両方空のままだと、これまで通りの静的モード（data.json）で動きます。
+    //    どちらも frontend に置いて安全な公開キーです（書込はDB側のRLSで保護）。
+    supabaseUrl: "",      // 例: https://xxxxxxxx.supabase.co
+    supabaseAnonKey: "",  // Project Settings → API → anon public key
+
     mailTo: "n.04.10.23.00@gmail.com",
+
+    // 静的モード時のみ使う簡易パスワード（SHA-256）。DBモードでは未使用。
+    // 既定: "edamame1023"
+    adminHash: "b530943de46fc05cb34c8ed92edae1ff871fd230881e8f192281d7cb16043896",
   };
 
-  const STORE_DATA = "studio_mono_data";   // 編集中データ（localStorageに永続保存）
+  const STORE_DATA = "studio_mono_data";   // 編集中データ（静的モードのlocalStorage保存）
   const STORE_AUTH = "studio_mono_admin";  // 管理モードフラグ（セッション）
+  const STORE_TOKEN = "studio_mono_token"; // DBモードのアクセストークン（セッション）
 
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hasGSAP = typeof window.gsap !== "undefined";
